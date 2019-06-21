@@ -1,0 +1,60 @@
+version: '3.5'
+
+
+volumes:
+  volume_db:
+
+
+networks:
+  net_common:
+
+
+services:
+  postgres:
+    image: testlink/postgres:latest
+    build: ./postgres/
+    container_name: testlink-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - volume_db:/var/lib/postgresql/data
+      - /var/run/postgresql
+      - /tmp
+    networks:
+      - net_common
+    read_only: true
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+
+  nginx:
+    image: testlink/nginx:latest
+    build: .
+    container_name: testlink-nginx
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - type: bind
+        source: ./logs
+        target: /var/testlink/logs
+        bind:
+          propagation: shared
+        consistency: consistent
+      - type: bind
+        source: ./upload_area
+        target: /var/testlink/upload_area
+        bind:
+          propagation: shared
+        consistency: consistent
+    networks:
+      - net_common
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
